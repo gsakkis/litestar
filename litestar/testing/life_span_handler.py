@@ -54,7 +54,7 @@ class LifeSpanHandler(Generic[T]):
             await self.receive()
 
     async def wait_shutdown(self) -> None:
-        async with self.stream_send:
+        async with self.stream_send, self.stream_receive:
             lifespan_shutdown_event: LifeSpanShutdownEvent = {"type": "lifespan.shutdown"}
             await self.stream_receive.send(lifespan_shutdown_event)
 

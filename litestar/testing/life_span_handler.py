@@ -42,16 +42,21 @@ class LifeSpanHandler(Generic[T]):
         await self.stream_receive.send(event)
 
         message = await self.receive()
-        if message["type"] not in (
-            "lifespan.startup.complete",
-            "lifespan.startup.failed",
-        ):
-            raise RuntimeError(
-                "Received unexpected ASGI message type. Expected 'lifespan.startup.complete' or "
-                f"'lifespan.startup.failed'. Got {message['type']!r}",
-            )
-        if message["type"] == "lifespan.startup.failed":
-            await self.receive()
+        try:
+            if message["type"] not in (
+                "lifespan.startup.complete",
+                "lifespan.startup.failed",
+            ):
+                raise RuntimeError(
+                    "Received unexpected ASGI message type. Expected 'lifespan.startup.complete' or "
+                    f"'lifespan.startup.failed'. Got {message['type']!r}",
+                )
+            if message["type"] == "lifespan.startup.failed":
+                await self.receive()
+        except BaseException:
+            await self.stream_receive.aclose()
+            await self.stream_send.aclose()
+            raise
 
     async def wait_shutdown(self) -> None:
         async with self.stream_send, self.stream_receive:
